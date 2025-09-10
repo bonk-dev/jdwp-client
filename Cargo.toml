@@ -3,7 +3,10 @@ name = "jdwp-client"
 version = "0.1.0"
 edition = "2024"
 description = "JDWP client implementation"
-license = "MIT"
+license-file = "LICENSE"
+repository = "https://github.com/bonk-dev/jdwp-client"
+keywords = ["jdwp", "java", "debugging", "jvm"]
+categories = ["development-tools::debugging"]
 
 [dependencies]
 bitflags = "2.9.1"
