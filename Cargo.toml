@@ -1,0 +1,13 @@
+[package]
+name = "jdwp-client"
+version = "0.1.0"
+edition = "2024"
+description = "JDWP client implementation"
+license = "MIT"
+
+[dependencies]
+bitflags = "2.9.1"
+byteorder = "1.5.0"
+binrw = "0.15.0"
+zip = "4.3.0"
+tokio = { version = "1", features = ["rt", "net", "io-util", "sync", "time"] }
