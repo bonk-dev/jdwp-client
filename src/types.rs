@@ -58,6 +58,16 @@ impl BinWrite for JdwpString {
         Ok(())
     }
 }
+impl PartialEq<&str> for JdwpString {
+    fn eq(&self, other: &&str) -> bool {
+        self.string == *other
+    }
+}
+impl PartialEq<JdwpString> for &str {
+    fn eq(&self, other: &JdwpString) -> bool {
+        *self == other.string
+    }
+}
 
 #[cfg(test)]
 mod tests {
