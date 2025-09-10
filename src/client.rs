@@ -19,6 +19,7 @@ pub struct JdwpClient<T> {
     packet_id: Arc<Mutex<u32>>,
     _reader_handle: tokio::task::JoinHandle<()>,
     sizes: Option<JdwpIdSizes>,
+    timeout_duration: Duration,
 }
 
 struct ReplyPacket {
@@ -51,6 +52,7 @@ where
             packet_id,
             _reader_handle: reader_handle,
             sizes: None,
+            timeout_duration: Duration::from_secs(5),
         };
         client.get_id_sizes().await?;
         Ok(client)
@@ -277,17 +279,17 @@ where
     }
 
     pub async fn vm_get_version(&self) -> result::Result<VersionReply> {
-        self.send_bodyless(Command::VirtualMachineVersion, Duration::from_secs(5))
+        self.send_bodyless(Command::VirtualMachineVersion, self.timeout_duration)
             .await
     }
 
     pub async fn vm_get_all_classes(&self) -> result::Result<AllClassesReply> {
-        self.send_bodyless_variable(Command::VirtualMachineAllClasses, Duration::from_secs(5))
+        self.send_bodyless_variable(Command::VirtualMachineAllClasses, self.timeout_duration)
             .await
     }
 
     pub async fn vm_get_id_sizes(&self) -> result::Result<IdSizesReply> {
-        self.send_bodyless(Command::VirtualMachineIDSizes, Duration::from_secs(5))
+        self.send_bodyless(Command::VirtualMachineIDSizes, self.timeout_duration)
             .await
     }
 }
