@@ -45,13 +45,15 @@ where
             Self::reader_loop(reader, pending_clone).await;
         });
 
-        Ok(JdwpClient {
+        let mut client = JdwpClient {
             writer: writer_arc,
             pending_requests,
             packet_id,
             _reader_handle: reader_handle,
             sizes: None,
-        })
+        };
+        client.get_id_sizes().await?;
+        Ok(client)
     }
 
     async fn reader_loop(
@@ -242,22 +244,7 @@ where
 
         Ok(())
     }
-
-    pub async fn vm_get_version(&self) -> result::Result<VersionReply> {
-        self.send_bodyless(Command::VirtualMachineVersion, Duration::from_secs(5))
-            .await
-    }
-
-    pub async fn vm_get_all_classes(&self) -> result::Result<AllClassesReply> {
-        self.send_bodyless_variable(Command::VirtualMachineAllClasses, Duration::from_secs(5))
-            .await
-    }
-
-    pub async fn vm_get_id_sizes(&self) -> result::Result<IdSizesReply> {
-        self.send_bodyless(Command::VirtualMachineIDSizes, Duration::from_secs(5))
-            .await
-    }
-    pub async fn get_id_sizes(&mut self) -> result::Result<()> {
+    async fn get_id_sizes(&mut self) -> result::Result<()> {
         let sizes = self.vm_get_id_sizes().await?;
         let field_id: u8 = sizes
             .field_id_size
@@ -287,5 +274,20 @@ where
             frame_id_size: frame_id,
         });
         Ok(())
+    }
+
+    pub async fn vm_get_version(&self) -> result::Result<VersionReply> {
+        self.send_bodyless(Command::VirtualMachineVersion, Duration::from_secs(5))
+            .await
+    }
+
+    pub async fn vm_get_all_classes(&self) -> result::Result<AllClassesReply> {
+        self.send_bodyless_variable(Command::VirtualMachineAllClasses, Duration::from_secs(5))
+            .await
+    }
+
+    pub async fn vm_get_id_sizes(&self) -> result::Result<IdSizesReply> {
+        self.send_bodyless(Command::VirtualMachineIDSizes, Duration::from_secs(5))
+            .await
     }
 }
