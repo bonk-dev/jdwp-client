@@ -120,6 +120,7 @@ impl AsyncWrite for MockStream {
         }
 
         self.write_data.extend_from_slice(buf);
+        println!("MockStream write: {:x?}", buf);
         Poll::Ready(Ok(buf.len()))
     }
 
