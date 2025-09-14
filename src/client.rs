@@ -9,8 +9,8 @@ use tokio::sync::{Mutex, oneshot};
 use tokio::time::timeout;
 
 use crate::{
-    AllClassesReply, Command, CommandPacketHeader, IdSizesReply, JdwpIdSizes, ReplyPacketHeader,
-    VersionReply, result,
+    AllClassesReply, ClassesBySignatureOut, ClassesBySignatureReply, Command, CommandPacketHeader,
+    IdSizesReply, JdwpIdSizes, JdwpStringSlice, ReplyPacketHeader, VersionReply, result,
 };
 
 pub struct JdwpClient<T> {
@@ -222,6 +222,40 @@ where
         Ok(reply)
     }
 
+    async fn send_out_data_variable_reply<
+        TOut: for<'a> BinWrite<Args<'a> = ()>,
+        TReply: for<'a> BinRead<Args<'a> = JdwpIdSizes>,
+    >(
+        &self,
+        cmd: Command,
+        out: TOut,
+        timeout_duration: Duration,
+    ) -> result::Result<TReply> {
+        let mut out_buffer: Vec<u8> = Vec::new();
+
+        {
+            let mut out_cursor = Cursor::new(&mut out_buffer);
+            TOut::write_be(&out, &mut out_cursor).map_err(|e| result::Error::ParsingError {
+                message: format!("Binary parsing error: {:?}", e),
+            })?;
+        }
+
+        let reply_packet = self
+            .send_request_with_timeout(cmd, out_buffer, timeout_duration)
+            .await?;
+
+        let mut cursor = Cursor::new(&reply_packet.data);
+        let reply = TReply::read_be_args(
+            &mut cursor,
+            self.sizes.ok_or(result::Error::IdSizesUnknown)?,
+        )
+        .map_err(|e| result::Error::ParsingError {
+            message: format!("Binary parsing error: {:?}", e),
+        })?;
+
+        Ok(reply)
+    }
+
     async fn do_handshake(stream: &mut T) -> result::Result<()> {
         const HANDSHAKE_STR: &str = "JDWP-Handshake";
 
@@ -281,6 +315,20 @@ where
     pub async fn vm_get_version(&self) -> result::Result<VersionReply> {
         self.send_bodyless(Command::VirtualMachineVersion, self.timeout_duration)
             .await
+    }
+
+    pub async fn vm_get_classes_by_signature(
+        &self,
+        signature: &str,
+    ) -> result::Result<ClassesBySignatureReply> {
+        self.send_out_data_variable_reply(
+            Command::VirtualMachineClassesBySignature,
+            ClassesBySignatureOut {
+                signature: JdwpStringSlice { value: signature },
+            },
+            self.timeout_duration,
+        )
+        .await
     }
 
     pub async fn vm_get_all_classes(&self) -> result::Result<AllClassesReply> {

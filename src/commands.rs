@@ -1,14 +1,17 @@
-use binrw::{BinRead, binrw};
+use binrw::{BinRead, binrw, binwrite};
 
-use crate::{ClassStatus, JdwpIdSize, JdwpIdSizes, JdwpString, TypeTag, binrw_enum};
+use crate::{
+    ClassStatus, JdwpIdSize, JdwpIdSizes, JdwpString, JdwpStringSlice, TypeTag, binrw_enum,
+};
 
 binrw_enum! {
     #[repr(u16)]
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub enum Command {
-        VirtualMachineVersion =     (1 << 8) | 1,
-        VirtualMachineAllClasses =  (1 << 8) | 3,
-        VirtualMachineIDSizes =     (1 << 8) | 7,
+        VirtualMachineVersion =                 (1 << 8) | 1,
+        VirtualMachineClassesBySignature =      (1 << 8) | 2,
+        VirtualMachineAllClasses =              (1 << 8) | 3,
+        VirtualMachineIDSizes =                 (1 << 8) | 7,
     }
 }
 
@@ -91,6 +94,64 @@ pub struct VersionReply {
     pub vm_version: JdwpString,
     pub vm_name: JdwpString,
 }
+
+// ====== BEGIN VirtualMachine_ClassesBySignature ======
+
+#[binwrite]
+#[br(big)]
+#[derive(Debug)]
+pub struct ClassesBySignatureOut<'a> {
+    pub signature: JdwpStringSlice<'a>,
+}
+
+#[derive(Debug)]
+pub struct ClassesBySignatureReplyClass {
+    pub ref_type_tag: TypeTag,
+    pub type_id: VariableLengthId,
+    pub status: ClassStatus,
+}
+
+impl BinRead for ClassesBySignatureReplyClass {
+    type Args<'a> = JdwpIdSizes;
+
+    fn read_options<R: std::io::Read + std::io::Seek>(
+        reader: &mut R,
+        endian: binrw::Endian,
+        args: Self::Args<'_>,
+    ) -> binrw::BinResult<Self> {
+        Ok(ClassesBySignatureReplyClass {
+            ref_type_tag: TypeTag::read_options(reader, endian, ())?,
+            type_id: VariableLengthId::read_options(reader, endian, args.reference_type_id_size)?,
+            status: ClassStatus::read_options(reader, endian, ())?,
+        })
+    }
+}
+
+#[derive(Debug)]
+pub struct ClassesBySignatureReply {
+    pub classes: Vec<ClassesBySignatureReplyClass>,
+}
+impl BinRead for ClassesBySignatureReply {
+    type Args<'a> = JdwpIdSizes;
+
+    fn read_options<R: std::io::Read + std::io::Seek>(
+        reader: &mut R,
+        endian: binrw::Endian,
+        args: Self::Args<'_>,
+    ) -> binrw::BinResult<Self> {
+        let classes_length = i32::read_options(reader, endian, ())?;
+        let mut classes = Vec::with_capacity(classes_length as usize);
+        for _ in 0..classes_length {
+            classes.push(ClassesBySignatureReplyClass::read_options(
+                reader, endian, args,
+            )?);
+        }
+
+        Ok(ClassesBySignatureReply { classes })
+    }
+}
+
+// ====== END VirtualMachine_ClassesBySignature ======
 
 #[binrw]
 #[brw(big)]
