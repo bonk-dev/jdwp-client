@@ -69,6 +69,31 @@ impl PartialEq<JdwpString> for &str {
     }
 }
 
+/// Write-only version of JdwpString which uses &'a str instead of String
+#[derive(Debug)]
+pub struct JdwpStringSlice<'a> {
+    pub value: &'a str,
+}
+impl<'a> BinWrite for JdwpStringSlice<'a> {
+    type Args<'b> = ();
+
+    fn write_options<W: std::io::Write + std::io::Seek>(
+        &self,
+        writer: &mut W,
+        endian: binrw::Endian,
+        args: Self::Args<'_>,
+    ) -> binrw::BinResult<()> {
+        let bytes = self.value.as_bytes();
+        let length = bytes.len() as u32;
+        length.write_options(writer, endian, args)?;
+
+        if length > 0 {
+            return bytes.write_options(writer, endian, args);
+        }
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
