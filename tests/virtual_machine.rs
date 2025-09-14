@@ -3,7 +3,7 @@ mod common;
 #[cfg(test)]
 mod vm_tests {
     use crate::common::MockStreamBuilder;
-    use jdwp_client::JdwpClient;
+    use jdwp_client::{ClassStatus, JdwpClient, TypeTag};
 
     #[tokio::test]
     async fn test_mock_connect() {
@@ -51,5 +51,46 @@ mod vm_tests {
         assert_eq!(version_data.jdwp_minor, 0);
         assert_eq!(version_data.vm_name, "OpenJDK 64-Bit Server VM");
         assert_eq!(version_data.vm_version, "21.0.8");
+    }
+
+    #[tokio::test]
+    async fn test_classes_by_signature_cmd() {
+        let mock_stream = MockStreamBuilder::default()
+            .response_bytes(
+                &[
+                    // full packet with body, length=0x21c, id=0x2, cmd: (0x1 << 8) | 2
+                    // signature: Lhello/HelloWorld;
+                    0x00, 0x00, 0x00, 0x21, 0x00, 0x00, 0x00, 0x02, 0x00, 0x01, 0x02, 0x00, 0x00,
+                    0x00, 0x12, 0x4c, 0x68, 0x65, 0x6c, 0x6c, 0x6f, 0x2f, 0x48, 0x65, 0x6c, 0x6c,
+                    0x6f, 0x57, 0x6f, 0x72, 0x6c, 0x64, 0x3b,
+                ],
+                &[
+                    // reply, length=0x1c, id=0x2
+                    // one class, ref_type_tag=1 (class), type_id=1 (8 byte long), status=7
+                    0x00, 0x00, 0x00, 0x1c, 0x00, 0x00, 0x00, 0x02, 0x80, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
+                    0x00, 0x07,
+                ],
+            )
+            .build();
+        let client = JdwpClient::new(mock_stream).await.unwrap();
+        let reply = client
+            .vm_get_classes_by_signature("Lhello/HelloWorld;")
+            .await
+            .unwrap();
+        assert_eq!(reply.classes.len(), 1, "Invalid classes vector length");
+
+        let class = &reply.classes[0];
+        assert_eq!(
+            class.ref_type_tag,
+            TypeTag::Class,
+            "Reference type tag does not match"
+        );
+        assert_eq!(
+            class.status,
+            ClassStatus::VERIFIED | ClassStatus::PREPARED | ClassStatus::INITIALIZED,
+            "Class status does not match"
+        );
+        assert_eq!(class.type_id.value, 1, "Class type id does not match");
     }
 }
