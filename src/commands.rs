@@ -153,17 +153,6 @@ impl BinRead for ClassesBySignatureReply {
 
 // ====== END VirtualMachine_ClassesBySignature ======
 
-#[binrw]
-#[brw(big)]
-#[derive(Debug)]
-pub struct IdSizesReply {
-    pub field_id_size: i32,
-    pub method_id_size: i32,
-    pub object_id_size: i32,
-    pub reference_type_id_size: i32,
-    pub frame_id_size: i32,
-}
-
 #[derive(Debug)]
 pub struct AllClassesReplyClass {
     pub ref_type_tag: TypeTag,
@@ -209,6 +198,19 @@ impl BinRead for AllClassesReply {
         Ok(AllClassesReply { classes })
     }
 }
+
+// ====== BEGIN VirtualMachine_IDSizes ======
+#[binrw]
+#[brw(big)]
+#[derive(Debug)]
+pub struct IdSizesReply {
+    pub field_id_size: i32,
+    pub method_id_size: i32,
+    pub object_id_size: i32,
+    pub reference_type_id_size: i32,
+    pub frame_id_size: i32,
+}
+// ====== END VirtualMachine_IDSizes ======
 
 #[cfg(test)]
 mod tests {
