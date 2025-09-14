@@ -2,7 +2,7 @@ use crate::binrw_enum;
 use binrw::binrw;
 use bitflags::bitflags;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 #[binrw]
 pub struct ClassStatus(i32);
 bitflags! {
@@ -16,7 +16,7 @@ bitflags! {
 
 binrw_enum! {
     #[repr(u8)]
-    #[derive(Debug, Clone, Copy)]
+    #[derive(Debug, Clone, Copy, PartialEq)]
     pub enum TypeTag {
         Class = 1,
         Interface = 2,
