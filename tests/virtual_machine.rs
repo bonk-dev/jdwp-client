@@ -4,6 +4,7 @@ mod common;
 mod vm_tests {
     use crate::common::MockStreamBuilder;
     use jdwp_client::{ClassStatus, JdwpClient, TypeTag};
+    use tokio::net::TcpStream;
 
     #[tokio::test]
     async fn test_mock_connect() {
@@ -148,5 +149,23 @@ mod vm_tests {
 
         let group = reply.threads_groups[0];
         assert_eq!(group.thread_group_id.value, 1, "Thread group ID mismatch");
+    }
+
+    #[tokio::test]
+    async fn test_dispose_cmd() {
+        let mock_stream = MockStreamBuilder::default()
+            .response_bytes(
+                &[
+                    // no out data, length=0xb, id=0x2, cmd: (0x1 << 8) | 0x6
+                    0x0, 0x0, 0x0, 0xb, 0x0, 0x0, 0x0, 0x2, 0x0, 0x1, 0x6,
+                ],
+                &[
+                    // reply, length=0xb, id=0x2
+                    0x0, 0x0, 0x0, 0xb, 0x0, 0x0, 0x0, 0x2, 0x80, 0x0, 0x0,
+                ],
+            )
+            .build();
+        let client = JdwpClient::new(mock_stream).await.unwrap();
+        _ = client.vm_dispose().await.unwrap();
     }
 }
