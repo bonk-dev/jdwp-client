@@ -12,6 +12,7 @@ binrw_enum! {
         VirtualMachineClassesBySignature =      (1 << 8) | 2,
         VirtualMachineAllClasses =              (1 << 8) | 3,
         VirtualMachineAllThreads =              (1 << 8) | 4,
+        VirtualMachineTopLevelThreadGroups =    (1 << 8) | 5,
         VirtualMachineIDSizes =                 (1 << 8) | 7,
     }
 }
@@ -244,6 +245,53 @@ impl BinRead for AllThreadsReply {
     }
 }
 // ====== END VirtualMachine_AllThreads ======
+
+// ====== BEGIN VirtualMachine_TopLevelThreadGroups ======
+#[derive(Clone, Copy, Debug)]
+pub struct TopLevelThreadGroupsReplyThreadGroup {
+    pub thread_group_id: VariableLengthId,
+}
+
+impl BinRead for TopLevelThreadGroupsReplyThreadGroup {
+    type Args<'a> = JdwpIdSizes;
+
+    fn read_options<R: std::io::Read + std::io::Seek>(
+        reader: &mut R,
+        endian: binrw::Endian,
+        args: Self::Args<'_>,
+    ) -> binrw::BinResult<Self> {
+        Ok(TopLevelThreadGroupsReplyThreadGroup {
+            thread_group_id: VariableLengthId::read_options(reader, endian, args.object_id_size)?,
+        })
+    }
+}
+
+#[derive(Debug)]
+pub struct TopLevelThreadGroupsReply {
+    pub threads_groups: Vec<TopLevelThreadGroupsReplyThreadGroup>,
+}
+
+impl BinRead for TopLevelThreadGroupsReply {
+    type Args<'a> = JdwpIdSizes;
+
+    fn read_options<R: std::io::Read + std::io::Seek>(
+        reader: &mut R,
+        endian: binrw::Endian,
+        args: Self::Args<'_>,
+    ) -> binrw::BinResult<Self> {
+        let length = u32::read_options(reader, endian, ())?;
+        let mut thread_ids = Vec::with_capacity(length as usize);
+        for _ in 0..length {
+            thread_ids.push(TopLevelThreadGroupsReplyThreadGroup::read_options(
+                reader, endian, args,
+            )?);
+        }
+        Ok(TopLevelThreadGroupsReply {
+            threads_groups: thread_ids,
+        })
+    }
+}
+// ====== END VirtualMachine_TopLevelThreadGroups ======
 
 // ====== BEGIN VirtualMachine_IDSizes ======
 #[binrw]

@@ -11,7 +11,7 @@ use tokio::time::timeout;
 use crate::{
     AllClassesReply, AllThreadsReply, ClassesBySignatureOut, ClassesBySignatureReply, Command,
     CommandPacketHeader, IdSizesReply, JdwpIdSizes, JdwpStringSlice, ReplyPacketHeader,
-    VersionReply, result,
+    TopLevelThreadGroupsReply, VersionReply, result,
 };
 
 pub struct JdwpClient<T> {
@@ -340,6 +340,16 @@ where
     pub async fn vm_get_all_threads(&self) -> result::Result<AllThreadsReply> {
         self.send_bodyless_variable(Command::VirtualMachineAllThreads, self.timeout_duration)
             .await
+    }
+
+    pub async fn vm_get_top_level_thread_groups(
+        &self,
+    ) -> result::Result<TopLevelThreadGroupsReply> {
+        self.send_bodyless_variable(
+            Command::VirtualMachineTopLevelThreadGroups,
+            self.timeout_duration,
+        )
+        .await
     }
 
     pub async fn vm_get_id_sizes(&self) -> result::Result<IdSizesReply> {
