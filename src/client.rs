@@ -352,6 +352,11 @@ where
         .await
     }
 
+    pub async fn vm_dispose(&self) -> result::Result<()> {
+        self.send_bodyless(Command::VirtualMachineDispose, self.timeout_duration)
+            .await
+    }
+
     pub async fn vm_get_id_sizes(&self) -> result::Result<IdSizesReply> {
         self.send_bodyless(Command::VirtualMachineIDSizes, self.timeout_duration)
             .await
