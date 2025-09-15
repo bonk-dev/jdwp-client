@@ -9,8 +9,9 @@ use tokio::sync::{Mutex, oneshot};
 use tokio::time::timeout;
 
 use crate::{
-    AllClassesReply, ClassesBySignatureOut, ClassesBySignatureReply, Command, CommandPacketHeader,
-    IdSizesReply, JdwpIdSizes, JdwpStringSlice, ReplyPacketHeader, VersionReply, result,
+    AllClassesReply, AllThreadsReply, ClassesBySignatureOut, ClassesBySignatureReply, Command,
+    CommandPacketHeader, IdSizesReply, JdwpIdSizes, JdwpStringSlice, ReplyPacketHeader,
+    VersionReply, result,
 };
 
 pub struct JdwpClient<T> {
@@ -333,6 +334,11 @@ where
 
     pub async fn vm_get_all_classes(&self) -> result::Result<AllClassesReply> {
         self.send_bodyless_variable(Command::VirtualMachineAllClasses, self.timeout_duration)
+            .await
+    }
+
+    pub async fn vm_get_all_threads(&self) -> result::Result<AllThreadsReply> {
+        self.send_bodyless_variable(Command::VirtualMachineAllThreads, self.timeout_duration)
             .await
     }
 

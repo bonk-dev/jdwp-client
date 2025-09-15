@@ -11,6 +11,7 @@ binrw_enum! {
         VirtualMachineVersion =                 (1 << 8) | 1,
         VirtualMachineClassesBySignature =      (1 << 8) | 2,
         VirtualMachineAllClasses =              (1 << 8) | 3,
+        VirtualMachineAllThreads =              (1 << 8) | 4,
         VirtualMachineIDSizes =                 (1 << 8) | 7,
     }
 }
@@ -54,7 +55,7 @@ impl ReplyPacketHeader {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct VariableLengthId {
     pub value: u64,
 }
@@ -198,6 +199,51 @@ impl BinRead for AllClassesReply {
         Ok(AllClassesReply { classes })
     }
 }
+
+// ====== BEGIN VirtualMachine_AllThreads ======
+#[derive(Clone, Copy, Debug)]
+pub struct AllThreadsReplyThread {
+    pub thread_id: VariableLengthId,
+}
+
+impl BinRead for AllThreadsReplyThread {
+    type Args<'a> = JdwpIdSizes;
+
+    fn read_options<R: std::io::Read + std::io::Seek>(
+        reader: &mut R,
+        endian: binrw::Endian,
+        args: Self::Args<'_>,
+    ) -> binrw::BinResult<Self> {
+        Ok(AllThreadsReplyThread {
+            thread_id: VariableLengthId::read_options(reader, endian, args.object_id_size)?,
+        })
+    }
+}
+
+#[derive(Debug)]
+pub struct AllThreadsReply {
+    pub threads: Vec<AllThreadsReplyThread>,
+}
+
+impl BinRead for AllThreadsReply {
+    type Args<'a> = JdwpIdSizes;
+
+    fn read_options<R: std::io::Read + std::io::Seek>(
+        reader: &mut R,
+        endian: binrw::Endian,
+        args: Self::Args<'_>,
+    ) -> binrw::BinResult<Self> {
+        let length = u32::read_options(reader, endian, ())?;
+        let mut thread_ids = Vec::with_capacity(length as usize);
+        for _ in 0..length {
+            thread_ids.push(AllThreadsReplyThread::read_options(reader, endian, args)?);
+        }
+        Ok(AllThreadsReply {
+            threads: thread_ids,
+        })
+    }
+}
+// ====== END VirtualMachine_AllThreads ======
 
 // ====== BEGIN VirtualMachine_IDSizes ======
 #[binrw]
