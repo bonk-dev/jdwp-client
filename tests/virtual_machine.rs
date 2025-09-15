@@ -121,4 +121,32 @@ mod vm_tests {
             assert_eq!(thread.thread_id.value, i as u64, "Thread ID mismatch");
         }
     }
+
+    #[tokio::test]
+    async fn test_top_level_thread_groups_cmd() {
+        let mock_stream = MockStreamBuilder::default()
+            .response_bytes(
+                &[
+                    // no out data, length=0xb, id=0x2, cmd: (0x1 << 8) | 0x5
+                    0x0, 0x0, 0x0, 0xb, 0x0, 0x0, 0x0, 0x2, 0x0, 0x1, 0x5,
+                ],
+                &[
+                    // reply, length=0x17, id=0x2
+                    //
+                    0x0, 0x0, 0x0, 0x17, 0x0, 0x0, 0x0, 0x2, 0x80, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1,
+                    0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1,
+                ],
+            )
+            .build();
+        let client = JdwpClient::new(mock_stream).await.unwrap();
+        let reply = client.vm_get_top_level_thread_groups().await.unwrap();
+        assert_eq!(
+            reply.threads_groups.len(),
+            1,
+            "More than 1 thread group was returned"
+        );
+
+        let group = reply.threads_groups[0];
+        assert_eq!(group.thread_group_id.value, 1, "Thread group ID mismatch");
+    }
 }
