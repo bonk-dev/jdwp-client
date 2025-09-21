@@ -168,4 +168,40 @@ mod vm_tests {
         let client = JdwpClient::new(mock_stream).await.unwrap();
         _ = client.vm_dispose().await.unwrap();
     }
+
+    #[tokio::test]
+    async fn test_suspend_cmd() {
+        let mock_stream = MockStreamBuilder::default()
+            .response_bytes(
+                &[
+                    // no out data, length=0xb, id=0x2, cmd: (0x1 << 8) | 0x8
+                    0x0, 0x0, 0x0, 0xb, 0x0, 0x0, 0x0, 0x2, 0x0, 0x1, 0x8,
+                ],
+                &[
+                    // reply, length=0xb, id=0x2
+                    0x0, 0x0, 0x0, 0xb, 0x0, 0x0, 0x0, 0x2, 0x80, 0x0, 0x0,
+                ],
+            )
+            .build();
+        let client = JdwpClient::new(mock_stream).await.unwrap();
+        _ = client.vm_suspend().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_resume_cmd() {
+        let mock_stream = MockStreamBuilder::default()
+            .response_bytes(
+                &[
+                    // no out data, length=0xb, id=0x2, cmd: (0x1 << 8) | 0x9
+                    0x0, 0x0, 0x0, 0xb, 0x0, 0x0, 0x0, 0x2, 0x0, 0x1, 0x9,
+                ],
+                &[
+                    // reply, length=0xb, id=0x2
+                    0x0, 0x0, 0x0, 0xb, 0x0, 0x0, 0x0, 0x2, 0x80, 0x0, 0x0,
+                ],
+            )
+            .build();
+        let client = JdwpClient::new(mock_stream).await.unwrap();
+        _ = client.vm_resume().await.unwrap();
+    }
 }
