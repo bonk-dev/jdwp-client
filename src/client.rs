@@ -361,4 +361,14 @@ where
         self.send_bodyless(Command::VirtualMachineIDSizes, self.timeout_duration)
             .await
     }
+
+    pub async fn vm_suspend(&self) -> result::Result<()> {
+        self.send_bodyless(Command::VirtualMachineSuspend, self.timeout_duration)
+            .await
+    }
+
+    pub async fn vm_resume(&self) -> result::Result<()> {
+        self.send_bodyless(Command::VirtualMachineResume, self.timeout_duration)
+            .await
+    }
 }

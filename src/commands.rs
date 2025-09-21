@@ -15,6 +15,8 @@ binrw_enum! {
         VirtualMachineTopLevelThreadGroups =    (1 << 8) | 5,
         VirtualMachineDispose =                 (1 << 8) | 6,
         VirtualMachineIDSizes =                 (1 << 8) | 7,
+        VirtualMachineSuspend =                 (1 << 8) | 8,
+        VirtualMachineResume =                  (1 << 8) | 9,
     }
 }
 
